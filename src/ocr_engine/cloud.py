@@ -3,7 +3,7 @@ import json
 import google.generativeai as genai
 from pathlib import Path
 from typing import Optional, Dict, Any
-from .utils import setup_logger
+from pdf_processor.utils import setup_logger
 
 class GeminiTimingExtractor:
   def __init__(self, api_key: Optional[str] = None):
@@ -15,8 +15,7 @@ class GeminiTimingExtractor:
       
     genai.configure(api_key=key)
     
-    # UPDATE: Use the 2.5 Pro Stable endpoint
-    # This model has the "Thinking" capability enabled by default for complex tasks.
+    # Use the 2.5 Pro Stable endpoint
     self.model_name = 'gemini-2.5-pro'
     
     self.model = genai.GenerativeModel(self.model_name)
@@ -38,14 +37,23 @@ class GeminiTimingExtractor:
     Role: Senior FPGA Verification Engineer.
     Task: Extract the formal timing constraints and logic causality from this diagram.
     
-    Goal: We need to write a SystemVerilog Assertion (SVA) based on this image.
+    CRITICAL STEP: Look at the Page Headers, Section Titles, and Figure Captions to determine the "Operating Mode".
+    (Examples: "3-Wire CS Mode", "Chain Mode", "With Busy Indicator", "No Busy Indicator").
     
-    Output JSON with these specific keys:
-    1. "clock_domain": Identify the main clock signal (e.g., SCK) and its active edge (Rising/Falling).
-    2. "causality": A list of objects describing triggers. 
-       Format: {"trigger": "CNV Rising", "effect": "SDO High-Z", "delay": "t_dis"}
-    3. "constraints": Key-Value pairs of all labeled timing parameters (e.g., {"t_conv": "Conversion Time", "t_acq": "Acquisition Time"}).
-    4. "bus_states": Describe the state of data buses (e.g., "SDO is High-Z until the first falling edge of SCK").
+    Output a JSON object with this specific structure:
+    {
+      "operating_mode": "The specific mode name found",
+      "clock_domain": { 
+        "signal": "Name of clock", 
+        "active_edge": "Rising/Falling" 
+      },
+      "causality": [
+        {"trigger": "CNV Rising", "effect": "SDO High-Z", "delay": "t_dis"}
+      ],
+      "constraints": {"t_conv": "Conversion Time", "t_acq": "Acquisition Time"},
+      "bus_states": "Description of High-Z states or data validity windows.",
+      "notes": "Any special constraints mentioned in footnotes."
+    }
     
     Warning: Be precise about "High-Z" (High Impedance) states shown by dashed lines.
     """

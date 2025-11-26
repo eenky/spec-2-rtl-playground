@@ -2,143 +2,110 @@ import typer
 from pathlib import Path
 from typing import Optional
 import sys
+import json
 
-# Add src to path so we can import our package
+# Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from pdf_processor import PDFProcessor, PDFExportConfig
 
-# Create the application
 app = typer.Typer(add_completion=False)
 
 @app.command()
 def main(
-  input: Path = typer.Option(
-    ..., 
-    "--input", "-i", 
-    help="Path to the source PDF file.", 
-    exists=True, 
-    dir_okay=False
-  ),
-  output: Optional[Path] = typer.Option(
-    None, 
-    "--output", "-o", 
-    help="Custom output directory."
-  ),
-  dpi: int = typer.Option(
-    150, 
-    "--dpi", 
-    help="Resolution for the output images."
-  )
+  input: Path = typer.Option(..., "--input", "-i", exists=True, dir_okay=False),
+  output: Optional[Path] = typer.Option(None, "--output", "-o"),
+  dpi: int = typer.Option(150, "--dpi")
 ):
-  """
-  Convert a PDF file into a sequence of images.
-  """
-  
-  # Typer handles the "input exists" check automatically with exists=True above!
-  
+  """Convert PDF to Images (Standard)."""
   print(f"--- Starting Processing: {input.name} ---")
-
   config = PDFExportConfig(dpi=dpi, image_format="png")
-
   try:
     with PDFProcessor(input) as processor:
-      # We pass the output path (even if None) and let core handle the default logic
       images = processor.convert_to_images(config, output_dir=output)
-      
       print(f"Success! Generated {len(images)} images.")
-      
   except Exception as e:
     print(f"Fatal Error: {e}")
     raise typer.Exit(code=1)
 
 @app.command()
 def ocr(
-  input_dir: Path = typer.Option(
-    ..., 
-    "--input", "-i", 
-    help="Directory containing images to process.", 
-    exists=True, 
-    file_okay=False
-  ),
-  output_dir: Path = typer.Option(
-    ..., 
-    "--output-dir", "-o", 
-    help="Directory to save individual markdown files."
-  ),
-  save_full: bool = typer.Option(
-    True, 
-    "--save-full/--no-save-full", 
-    help="Also save a combined _full.md file for easy reading."
-  )
+  input_dir: Path = typer.Option(..., "--input", "-i", exists=True, file_okay=False),
+  output_dir: Path = typer.Option(..., "--output-dir", "-o"),
+  extract_timing: bool = typer.Option(False, "--extract-timing", help="Enable Cloud Logic Extraction.")
 ):
   """
-  Run OlmOCR on a folder of images, saving individual markdown files.
+  Run OlmOCR on images. Smartly detects and extracts timing logic.
   """
+  # 1. Setup Dependencies (New Imports)
   try:
-    from pdf_processor.ocr import OlmOCRProcessor
+    from ocr_engine import OlmOCRProcessor, GeminiTimingExtractor
+    ocr_engine = OlmOCRProcessor()
   except ImportError as e:
     print(f"Error: Missing ML dependencies. {e}")
     raise typer.Exit(1)
-  
-  # 1. Setup Output Directory
+    
+  gemini_extractor = None
+  if extract_timing:
+    try:
+      gemini_extractor = GeminiTimingExtractor()
+      print("[INFO] Cloud Vision initialized.")
+    except Exception as e:
+      print(f"[WARN] Cloud Vision unavailable: {e}")
+      extract_timing = False
+
   if not output_dir.exists():
     output_dir.mkdir(parents=True)
-    print(f"Created output directory: {output_dir}")
 
-  print(f"--- Starting OCR on folder: {input_dir} ---")
-  
-  # 2. Initialize Engine
-  try:
-    ocr_engine = OlmOCRProcessor()
-  except Exception as e:
-    print(f"Failed to load OCR engine: {e}")
-    raise typer.Exit(1)
-
-  # 3. Gather Images
   images = sorted(list(input_dir.glob("*.png")))
-  if not images:
-    print("No .png files found.")
-    raise typer.Exit(1)
-
-  print(f"Found {len(images)} images. Processing...")
+  print(f"--- Processing {len(images)} pages ---")
 
   full_text_buffer = []
 
-  # 4. Process Loop
-  import time
-  start_time = time.time()
-
   for i, img in enumerate(images):
-    print(f"[{i+1}/{len(images)}] Reading {img.name}...")
+    print(f"[{i+1}/{len(images)}] Reading {img.name}...", end=" ", flush=True)
+    
     try:
-      # Run Model
+      # A. Local Text OCR
       page_text = ocr_engine.process_image(img)
       
-      # A. Save Individual File (e.g., page_001.md)
-      md_filename = f"{img.stem}.md"
-      md_path = output_dir / md_filename
-      
+      md_path = output_dir / f"{img.stem}.md"
       with open(md_path, "w", encoding="utf-8") as f:
-        f.write(f"\n\n")
-        f.write(page_text)
+        f.write(f"\n\n{page_text}")
       
-      # B. Buffer for full file
-      if save_full:
-        full_text_buffer.append(f"\n\n\n{page_text}")
-        
-    except Exception as e:
-      print(f"Error reading {img.name}: {e}")
+      full_text_buffer.append(f"\n\n\n{page_text}")
+      print("Done.")
 
-  # 5. Save Full (Optional)
-  if save_full and full_text_buffer:
-    full_path = output_dir / "_full_datasheet.md"
-    with open(full_path, "w", encoding="utf-8") as f:
-      f.write("\n".join(full_text_buffer))
-    print(f"Saved combined file to: {full_path}")
-  
-  elapsed = time.time() - start_time
-  print(f"--- Complete! Processed {len(images)} pages in {elapsed:.1f}s ---")
+      # B. Diagram Detection Logic
+      if extract_timing:
+        keywords = ["timing", "switching", "waveform", "figure"]
+        has_keyword = any(k in page_text.lower() for k in keywords)
+        
+        if has_keyword:
+          print(f"      [?] Hints found. Verifying visual presence...", end=" ")
+          if ocr_engine.has_visual_diagram(img):
+            print("YES.")
+            print(f"      [⚡] Sending to Gemini for Context Extraction...")
+            try:
+              logic_data = gemini_extractor.analyze_diagram(img)
+              
+              json_path = output_dir / f"{img.stem}_timing.json"
+              with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(logic_data, f, indent=2)
+                
+              print(f"      [✓] Logic extracted: Mode='{logic_data.get('operating_mode', 'Unknown')}'")
+            except Exception as e:
+              print(f"      [X] Extraction failed: {e}")
+          else:
+            print("NO.")
+
+    except Exception as e:
+      print(f"\nError processing {img.name}: {e}")
+
+  full_path = output_dir / "_full_datasheet.md"
+  with open(full_path, "w", encoding="utf-8") as f:
+    f.write("\n".join(full_text_buffer))
+  print(f"\n--- Complete! Output in {output_dir} ---")
 
 if __name__ == "__main__":
   app()

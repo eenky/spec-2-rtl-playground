@@ -1,34 +1,32 @@
 import sys
 from pathlib import Path
 import json
+import os
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
-from pdf_processor.cloud_vision import GeminiTimingExtractor
+from ocr_engine import GeminiTimingExtractor
 
 def main():
-  # Point this to the page with the diagram (e.g., Page 6 or 20)
-  # You need to have run the previous image generation step first!
-  target_image = Path("src/pdf/ad7980_images/page_006.png")
+  # We target Page 20 explicitly to test "Operating Mode" detection
+  # (Make sure you generated images first!)
+  target_image = Path("src/pdf/ad7980_images/page_020.png")
   
   if not target_image.exists():
-    print("Please run the image generation step first!")
+    print(f"Error: {target_image} does not exist. Run the image converter first.")
     return
 
   try:
-    # Ensure GEMINI_API_KEY is set in your terminal
-    # export GEMINI_API_KEY="your_key_here"
+    print(f"--- Testing Gemini 2.5 Pro on {target_image.name} ---")
     extractor = GeminiTimingExtractor()
     
-    print(f"Analyzing {target_image}...")
     result = extractor.analyze_diagram(target_image)
     
-    # Save the 'Gold Standard' timing spec
-    output_path = Path("src/pdf/ad7980_timing_logic.json")
+    output_path = Path("src/pdf/ad7980_page_20_timing.json")
     with open(output_path, "w") as f:
       json.dump(result, f, indent=2)
       
-    print(f"\nSuccess! Logic extracted to {output_path}")
-    print(json.dumps(result, indent=2))
+    print(f"\n[SUCCESS] Mode Detected: {result.get('operating_mode')}")
+    print(f"Logic saved to {output_path}")
     
   except Exception as e:
     print(f"Failed: {e}")

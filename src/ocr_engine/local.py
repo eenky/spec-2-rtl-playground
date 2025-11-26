@@ -2,7 +2,7 @@ import torch
 from pathlib import Path
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForVision2Seq
-from .utils import setup_logger
+from pdf_processor.utils import setup_logger
 
 class OlmOCRProcessor:
   def __init__(self):
@@ -10,8 +10,6 @@ class OlmOCRProcessor:
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
     
     # 1. Configuration for OlmOCR 2 (Qwen2.5-VL based)
-    # We use the official model for weights, but the base model for the processor
-    # to guarantee we get the correct image resizing logic and chat templates.
     self.model_id = "allenai/olmOCR-2-7B-1025"
     self.base_model_id = "Qwen/Qwen2.5-VL-7B-Instruct" 
 
@@ -34,7 +32,6 @@ class OlmOCRProcessor:
       self.logger.info("Using PyTorch SDPA (Standard Attention).")
 
     # 4. Load Model
-    # Qwen2.5-VL requires 'AutoModelForVision2Seq'
     self.model = AutoModelForVision2Seq.from_pretrained(
       self.model_id,
       torch_dtype=torch.bfloat16,  # Native precision for 3090 Ti
@@ -56,8 +53,6 @@ class OlmOCRProcessor:
     image = Image.open(image_path).convert("RGB")
     
     # 5. The "No-Anchor" Prompt
-    # OlmOCR 2 is fine-tuned to act as a transcriber. 
-    # We explicitly tell it NOT to look for anchors (since we don't have them).
     prompt_text = (
       "Accurately transcribe the text, tables, and layout of this document image into Markdown. "
       "Use LaTeX for equations. Represent tables using standard Markdown syntax. "
@@ -79,7 +74,6 @@ class OlmOCRProcessor:
       messages, tokenize=False, add_generation_prompt=True
     )
     
-    # Qwen2.5-VL image processing
     inputs = self.processor(
       images=[image],
       text=[text],
@@ -91,8 +85,8 @@ class OlmOCRProcessor:
     with torch.no_grad():
       generated_ids = self.model.generate(
         **inputs,
-        max_new_tokens=4096,  # OlmOCR 2 supports very long context
-        temperature=0.1,      # Low temp for precision
+        max_new_tokens=4096,
+        temperature=0.1,
         do_sample=True,
         use_cache=True
       )
@@ -107,3 +101,44 @@ class OlmOCRProcessor:
     )[0]
     
     return output_text
+
+  def has_visual_diagram(self, image_path: Path) -> bool:
+    """
+    Asks the local vision model if a timing diagram is VISUALLY present.
+    Returns True/False.
+    """
+    image = Image.open(image_path).convert("RGB")
+    
+    prompt_text = (
+      "Look at this image. Is there a visual 'Timing Diagram' or 'Waveform' chart present? "
+      "Ignore text references to other pages. "
+      "Answer with a single word: YES or NO."
+    )
+    
+    messages = [
+      {"role": "user", "content": [
+        {"type": "image", "image": image},
+        {"type": "text", "text": prompt_text}
+      ]}
+    ]
+
+    text_input = self.processor.apply_chat_template(
+      messages, tokenize=False, add_generation_prompt=True
+    )
+    
+    inputs = self.processor(
+      images=[image], 
+      text=[text_input], 
+      padding=True, 
+      return_tensors="pt"
+    ).to(self.device)
+
+    with torch.no_grad():
+      generated_ids = self.model.generate(**inputs, max_new_tokens=10)
+      
+    output = self.processor.batch_decode(
+      [out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)], 
+      skip_special_tokens=True
+    )[0].strip().upper()
+
+    return "YES" in output
