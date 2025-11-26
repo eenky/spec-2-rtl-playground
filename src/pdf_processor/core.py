@@ -61,44 +61,51 @@ class PDFProcessor:
       self.document = None
       self.logger.debug("Document closed.")
 
-  def convert_to_images(self, config: PDFExportConfig) -> List[Path]:
-    """
-    Converts all pages in the PDF to images based on the config.
-    Returns a list of paths to the created images.
-    """
-    if not self.document:
-      raise RuntimeError("Document is not open. Use 'with PDFProcessor(...)'.")
-
-    # 1. Ensure output directory exists
-    if not self.default_output_dir.exists():
-      self.default_output_dir.mkdir(parents=True)
-      self.logger.info(f"Created output directory: {self.default_output_dir}")
-
-    generated_files = []
-
-    # 2. Iterate through pages
-    for page_num, page in enumerate(self.document):
-      try:
-        # Calculate Matrix for DPI (72 is base PDF DPI)
-        # zoom = 300 / 72 = 4.16x
-        zoom = config.dpi / 72
-        matrix = fitz.Matrix(zoom, zoom)
-        
-        # Render page to pixel map
-        pix = page.get_pixmap(matrix=matrix)
-        
-        # Construct filename: page_001.png
-        filename = f"page_{page_num + 1:03d}.{config.image_format}"
-        output_path = self.default_output_dir / filename
-        
-        # Save to disk
-        pix.save(output_path)
-        generated_files.append(output_path)
-        
-        self.logger.debug(f"Saved {filename}")
-        
-      except Exception as e:
-        self.logger.error(f"Failed to convert page {page_num + 1}: {e}")
-
-    self.logger.info(f"Conversion complete. {len(generated_files)} images saved.")
-    return generated_files
+  def convert_to_images(self, config: PDFExportConfig, output_dir: Optional[Path] = None) -> List[Path]:
+      """
+      Converts all pages to images.
+      Args:
+        config: The DPI/Format settings.
+        output_dir: Optional override for where to save images. 
+                    If None, defaults to ./filename_images/
+      """
+      if not self.document:
+        raise RuntimeError("Document is not open. Use 'with PDFProcessor(...)'.")
+  
+      # Determine the actual target directory
+      target_dir = output_dir if output_dir else self.default_output_dir
+  
+      # 1. Ensure output directory exists
+      if not target_dir.exists():
+        target_dir.mkdir(parents=True)
+        self.logger.info(f"Created output directory: {target_dir}")
+      else:
+        self.logger.info(f"Using existing output directory: {target_dir}")
+  
+      generated_files = []
+  
+      # 2. Iterate through pages
+      for page_num, page in enumerate(self.document):
+        try:
+          # Calculate Matrix for DPI (72 is base PDF DPI)
+          zoom = config.dpi / 72
+          matrix = fitz.Matrix(zoom, zoom)
+          
+          # Render page to pixel map
+          pix = page.get_pixmap(matrix=matrix)
+          
+          # Construct filename: page_001.png
+          filename = f"page_{page_num + 1:03d}.{config.image_format}"
+          output_path = target_dir / filename
+          
+          # Save to disk
+          pix.save(output_path)
+          generated_files.append(output_path)
+          
+          self.logger.debug(f"Saved {filename}")
+          
+        except Exception as e:
+          self.logger.error(f"Failed to convert page {page_num + 1}: {e}")
+  
+      self.logger.info(f"Conversion complete. {len(generated_files)} images saved to {target_dir}")
+      return generated_files
