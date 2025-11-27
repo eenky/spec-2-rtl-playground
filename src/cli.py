@@ -37,7 +37,6 @@ def ocr(
   """
   Run OlmOCR on images. Smartly detects and extracts timing logic.
   """
-  # 1. Setup Dependencies (New Imports)
   try:
     from ocr_engine import OlmOCRProcessor, GeminiTimingExtractor
     ocr_engine = OlmOCRProcessor()
@@ -106,6 +105,142 @@ def ocr(
   with open(full_path, "w", encoding="utf-8") as f:
     f.write("\n".join(full_text_buffer))
   print(f"\n--- Complete! Output in {output_dir} ---")
+
+@app.command()
+def list_options(
+  context_dir: Path = typer.Option(..., "--context-dir", "-c", exists=True, help="Path to context folder.")
+):
+  """
+  Read the Knowledge Tree and display available RTL configurations.
+  """
+  try:
+    from rtl_context import TreeNavigator
+  except ImportError as e:
+    print(f"Error: {e}")
+    raise typer.Exit(1)
+
+  tree_path = context_dir / "rtl_knowledge_tree.json"
+  if not tree_path.exists():
+    print(f"Error: No tree found at {tree_path}. Run 'build-context' first.")
+    raise typer.Exit(1)
+
+  navigator = TreeNavigator(tree_path)
+  options = navigator.list_configurations()
+
+  print(f"\n--- Available Configurations for {navigator.root.title} ---")
+  print(f"Device Description: {navigator.root.description}\n")
+
+  if not options:
+    print("[!] No selectable sub-modes found. The tree might be flat or malformed.")
+    print("    Check 'rtl_knowledge_tree.json' manually.")
+    return
+
+  for idx, opt in enumerate(options):
+    print(f"{idx + 1}. {opt['name']}")
+    print(f"   ID:        {opt['id']}")
+    print(f"   Logic:     {opt['description']}")
+    print(f"   Condition: {opt['condition']}")
+    print("")
+
+  print(f"To generate RTL, you will select an ID (e.g. '{options[0]['id']}')")
+
+@app.command()
+def build_context(
+  input_dir: Path = typer.Option(..., "--input-dir", "-i", exists=True),
+  output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Folder to save contexts."),
+  force: bool = typer.Option(False, "--force", "-f", help="Force re-classification even if cached.")
+):
+  """
+  Analyze pages using both Markdown text AND Gemini Timing Logic (if available).
+  """
+  try:
+    from rtl_context import PageClassifier, KnowledgeTreeBuilder
+    import json
+  except ImportError as e:
+    print(f"Error: {e}")
+    raise typer.Exit(1)
+  
+  if not output_dir.exists():
+    output_dir.mkdir(parents=True)
+
+  # --- Phase 1: Classification (Local Qwen) ---
+  flat_path = output_dir / "rtl_context_flat.json"
+  flat_manifest = []
+
+  # Check for Cache
+  if flat_path.exists() and not force:
+    print(f"--- Phase 1: Page Classification (Skipped) ---")
+    print(f"[Cache] Found existing context at {flat_path.name}. Loading...")
+    with open(flat_path, "r", encoding="utf-8") as f:
+      flat_manifest = json.load(f)
+    print(f"Loaded {len(flat_manifest)} pages from cache.")
+  else:
+    print("--- Phase 1: Page Classification (Ollama) ---")
+    classifier = PageClassifier(model_name="qwen3:14b")
+    
+    files = sorted(list(input_dir.glob("*.md")))
+    files = [f for f in files if not f.name.startswith("_")]
+    
+    print(f"Analyzing {len(files)} pages...")
+    
+    for f in files:
+      print(f"Classifying {f.name}...", end=" ", flush=True)
+      
+      with open(f, "r", encoding="utf-8") as file_handle:
+        content = file_handle.read()
+        
+      # Context Injection
+      timing_json_path = input_dir / f"{f.stem}_timing.json"
+      
+      context_injection = ""
+      if timing_json_path.exists():
+        try:
+          with open(timing_json_path, "r") as jf:
+            data = json.load(jf)
+          mode = data.get("operating_mode", "Unknown Mode")
+          clock = data.get("clock_domain", {}).get("signal", "Unknown Clock")
+          
+          context_injection = (
+            f"\n[METADATA FROM GEMINI VISION]\n"
+            f"Verified Operating Mode: {mode}\n"
+            f"Clock Signal: {clock}\n"
+            f"Contains Timing Diagram: YES\n"
+            f"----------------------------------------\n"
+          )
+          print(f"[+JSON Mode: {mode}]", end=" ")
+        except Exception as e:
+          print(f"[JSON Error: {e}]", end=" ")
+
+      full_analysis_content = context_injection + content
+      
+      analysis = classifier.analyze_page(f.stem, full_analysis_content)
+      print(f"[{analysis.page_type.value.upper()}] Score: {analysis.relevance_score}")
+      
+      if analysis.relevance_score >= 4:
+        flat_manifest.append(analysis.model_dump())
+
+    # Save Flat Context
+    with open(flat_path, "w", encoding="utf-8") as f:
+      json.dump(flat_manifest, f, indent=2)
+    print(f"-> Flat context saved to {flat_path.name}")
+
+  # --- Phase 2: Tree Construction (Cloud Gemini) ---
+  if flat_manifest:
+    print("\n--- Phase 2: Knowledge Tree Construction (GROVE) ---")
+    builder = KnowledgeTreeBuilder(model_name="gemini-2.5-flash")
+    tree = builder.build_tree(flat_manifest)
+    
+    if tree:
+      tree_path = output_dir / "rtl_knowledge_tree.json"
+      with open(tree_path, "w", encoding="utf-8") as f:
+        f.write(tree.model_dump_json(indent=2))
+      print(f"-> 🌳 Hierarchy built and saved to {tree_path.name}")
+    else:
+      print("-> Failed to build tree structure (Check API Key).")
+  else:
+    print("-> No relevant pages found.")
+
+  print("\n--- Context Build Complete ---")
 
 if __name__ == "__main__":
   app()
