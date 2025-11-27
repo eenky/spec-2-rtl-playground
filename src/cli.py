@@ -107,44 +107,6 @@ def ocr(
   print(f"\n--- Complete! Output in {output_dir} ---")
 
 @app.command()
-def list_options(
-  context_dir: Path = typer.Option(..., "--context-dir", "-c", exists=True, help="Path to context folder.")
-):
-  """
-  Read the Knowledge Tree and display available RTL configurations.
-  """
-  try:
-    from rtl_context import TreeNavigator
-  except ImportError as e:
-    print(f"Error: {e}")
-    raise typer.Exit(1)
-
-  tree_path = context_dir / "rtl_knowledge_tree.json"
-  if not tree_path.exists():
-    print(f"Error: No tree found at {tree_path}. Run 'build-context' first.")
-    raise typer.Exit(1)
-
-  navigator = TreeNavigator(tree_path)
-  options = navigator.list_configurations()
-
-  print(f"\n--- Available Configurations for {navigator.root.title} ---")
-  print(f"Device Description: {navigator.root.description}\n")
-
-  if not options:
-    print("[!] No selectable sub-modes found. The tree might be flat or malformed.")
-    print("    Check 'rtl_knowledge_tree.json' manually.")
-    return
-
-  for idx, opt in enumerate(options):
-    print(f"{idx + 1}. {opt['name']}")
-    print(f"   ID:        {opt['id']}")
-    print(f"   Logic:     {opt['description']}")
-    print(f"   Condition: {opt['condition']}")
-    print("")
-
-  print(f"To generate RTL, you will select an ID (e.g. '{options[0]['id']}')")
-
-@app.command()
 def build_context(
   input_dir: Path = typer.Option(..., "--input-dir", "-i", exists=True),
   output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Folder to save contexts."),
@@ -167,7 +129,6 @@ def build_context(
   flat_path = output_dir / "rtl_context_flat.json"
   flat_manifest = []
 
-  # Check for Cache
   if flat_path.exists() and not force:
     print(f"--- Phase 1: Page Classification (Skipped) ---")
     print(f"[Cache] Found existing context at {flat_path.name}. Loading...")
@@ -219,7 +180,6 @@ def build_context(
       if analysis.relevance_score >= 4:
         flat_manifest.append(analysis.model_dump())
 
-    # Save Flat Context
     with open(flat_path, "w", encoding="utf-8") as f:
       json.dump(flat_manifest, f, indent=2)
     print(f"-> Flat context saved to {flat_path.name}")
@@ -241,6 +201,105 @@ def build_context(
     print("-> No relevant pages found.")
 
   print("\n--- Context Build Complete ---")
+
+@app.command()
+def list_options(
+  context_dir: Path = typer.Option(..., "--context-dir", "-c", exists=True, help="Path to context folder.")
+):
+  """Read the Knowledge Tree and display available RTL configurations."""
+  try:
+    from rtl_context import TreeNavigator
+  except ImportError as e:
+    print(f"Error: {e}")
+    raise typer.Exit(1)
+
+  tree_path = context_dir / "rtl_knowledge_tree.json"
+  if not tree_path.exists():
+    print(f"Error: No tree found at {tree_path}. Run 'build-context' first.")
+    raise typer.Exit(1)
+
+  navigator = TreeNavigator(tree_path)
+  options = navigator.list_configurations()
+
+  print(f"\n--- Available Configurations for {navigator.root.title} ---")
+  print(f"Device Description: {navigator.root.description}\n")
+
+  if not options:
+    print("[!] No selectable sub-modes found. The tree might be flat or malformed.")
+    return
+
+  for idx, opt in enumerate(options):
+    print(f"{idx + 1}. {opt['name']}")
+    print(f"   ID:        {opt['id']}")
+    print(f"   Logic:     {opt['description']}")
+    print(f"   Condition: {opt['condition']}")
+    print("")
+
+  print(f"To generate RTL, you will select an ID (e.g. '{options[0]['id']}')")
+
+@app.command()
+def generate_spec(
+  config_name: str = typer.Option(..., "--config", "-c", help="The configuration to spec (e.g. '3-wire busy')."),
+  context_dir: Path = typer.Option(..., "--context-dir", "-d", exists=True),
+  md_dir: Path = typer.Option(..., "--md-dir", "-m", exists=True),
+  output: Path = typer.Option("requirements.md", "--output", "-o")
+):
+  """Generate a Formal Requirements Specification (Markdown)."""
+  try:
+    from rtl_generator import SpecGenAgent
+  except ImportError as e:
+    print(f"Error: {e}")
+    raise typer.Exit(1)
+
+  agent = SpecGenAgent(context_dir=context_dir, md_dir=md_dir)
+  
+  print(f"--- Drafting Requirements for: {config_name} ---")
+  try:
+    prompt = f"Generate a full Requirements Specification for the '{config_name}' mode of the AD7980."
+    spec_text = agent.run(prompt)
+    
+    with open(output, "w", encoding="utf-8") as f:
+      f.write(spec_text)
+      
+    print(f"\n--- Spec Generation Complete ---")
+    print(f"Saved to: {output.absolute()}")
+    
+  except Exception as e:
+    print(f"Agent Failure: {e}")
+    import traceback
+    traceback.print_exc()
+    raise typer.Exit(1)
+
+@app.command()
+def generate(
+  prompt: str = typer.Option(..., "--prompt", "-p", help="What RTL to generate."),
+  context_dir: Path = typer.Option(..., "--context-dir", "-c", exists=True),
+  md_dir: Path = typer.Option(..., "--md-dir", "-m", exists=True, help="Folder with markdown/json pages.")
+):
+  """Generate SystemVerilog using the Knowledge Tree Agent (LangGraph)."""
+  try:
+    from rtl_generator import RTLAgent
+  except ImportError as e:
+    print(f"Error: {e}")
+    raise typer.Exit(1)
+
+  agent = RTLAgent(context_dir=context_dir, md_dir=md_dir)
+  
+  try:
+    code = agent.run(prompt)
+    
+    output_file = Path("generated_rtl.sv")
+    with open(output_file, "w", encoding="utf-8") as f:
+      f.write(code)
+      
+    print(f"\n--- Generation Complete ---")
+    print(f"Code saved to: {output_file.absolute()}")
+    
+  except Exception as e:
+    print(f"Agent Failure: {e}")
+    import traceback
+    traceback.print_exc()
+    raise typer.Exit(1)
 
 if __name__ == "__main__":
   app()

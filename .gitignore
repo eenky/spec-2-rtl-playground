@@ -6,3 +6,6 @@ src/__pycache__/
 trash/
 uv.lock
 uv.toml
+__pycache__/
+*.pyc
+*.pyo
