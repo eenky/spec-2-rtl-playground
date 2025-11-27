@@ -1,0 +1,89 @@
+uv run src/cli.py ocr --input src/pdf/ad7980_images --output-dir src/pdf/ad7980_md --extract-timing
+
+uv run src/cli.py build-context --input-dir src/pdf/ad7980_md --output-dir src/pdf/ad7980_context
+
+uv run src/cli.py generate-spec   --config "3-Wire CS Mode with Busy Indicator"   --context-dir src/pdf/ad7980_context   --md-dir src/pdf/ad7980_md   --output ad7980_spec_v3.md
+
+uv run src/cli.py generate --prompt "Generate a SystemVerilog module for the AD7980 in 3-Wire CS Mode with Busy Indicator." --context-dir src/pdf/ad7980_context --md-dir src/pdf/ad7980_md
+
+
+expected tree output
+
+```json
+{
+  "id": "ad7980_root",
+  "type": "device_root",
+  "title": "AD7980 ADC",
+  "description": "16-bit, 1 MSPS, Pseudo-differential PulSAR ADC",
+  "apply_condition": "ALWAYS",
+  "children": [
+    {
+      "id": "global_specs",
+      "type": "mode_group",
+      "title": "Global Specifications",
+      "description": "Electrical characteristics and timing constraints applicable to all modes",
+      "apply_condition": "ALWAYS",
+      "children": [
+        {
+          "id": "timing_table",
+          "type": "leaf_fact",
+          "title": "Timing Specifications Table",
+          "description": "Lookup table for t_CONV, t_ACQ, t_SCK min/max values",
+          "apply_condition": "Use these values for constraint checks (SDC)",
+          "content_refs": ["page_006"]
+        },
+        {
+          "id": "pinout",
+          "type": "leaf_fact",
+          "title": "Pin Configuration",
+          "description": "Pin definitions for MSOP/LFCSP packages",
+          "apply_condition": "Use for top-level module port definition",
+          "content_refs": ["page_009"]
+        }
+      ]
+    },
+    {
+      "id": "interface_modes",
+      "type": "mode_group",
+      "title": "Serial Interface Modes",
+      "description": "The mutually exclusive operating modes of the digital interface",
+      "apply_condition": "Select ONE based on user configuration",
+      "children": [
+        {
+          "id": "mode_3wire_cs",
+          "type": "sub_mode",
+          "title": "3-Wire CS Mode",
+          "description": "Standard SPI-like interface using CNV, SCK, SDO",
+          "apply_condition": "IF config.interface == '3_WIRE'",
+          "children": [
+            {
+              "id": "3wire_busy",
+              "type": "leaf_fact",
+              "title": "With Busy Indicator",
+              "description": "Logic where SDO indicates busy status before data",
+              "apply_condition": "IF config.use_busy_indicator == TRUE",
+              "content_refs": ["page_020"]
+            },
+            {
+              "id": "3wire_no_busy",
+              "type": "leaf_fact",
+              "title": "Without Busy Indicator",
+              "description": "Standard transfer where host waits fixed time",
+              "apply_condition": "IF config.use_busy_indicator == FALSE",
+              "content_refs": ["page_019"]
+            }
+          ]
+        },
+        {
+          "id": "mode_chain",
+          "type": "sub_mode",
+          "title": "Chain Mode",
+          "description": "Daisy-chaining multiple ADCs using SDI input",
+          "apply_condition": "IF config.interface == 'DAISY_CHAIN'",
+          "content_refs": ["page_023", "page_024"]
+        }
+      ]
+    }
+  ]
+}
+```

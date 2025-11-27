@@ -1,0 +1,73 @@
+{
+  "operating_mode": "4-Wire CS Mode Without Busy Indicator",
+  "clock_domains": [
+    {
+      "signal": "SCK",
+      "edge": "Falling"
+    }
+  ],
+  "causality": [
+    {
+      "trigger": "A rising edge on CNV",
+      "effect": "A conversion sequence is initiated.",
+      "condition": "SDI must be held high."
+    },
+    {
+      "trigger": "Completion of the conversion time (tCONV)",
+      "effect": "The device enters the acquisition phase and powers down. The conversion result is ready to be read.",
+      "condition": "N/A"
+    },
+    {
+      "trigger": "A falling edge on SDI (acting as Chip Select)",
+      "effect": "The SDO line is driven out of high impedance after tEN, and the Most Significant Bit (MSB, D15) of the conversion result becomes valid.",
+      "condition": "The conversion must be complete."
+    },
+    {
+      "trigger": "A falling edge on SCK",
+      "effect": "The next data bit is shifted out and becomes valid on the SDO pin after a propagation delay of tDSDO.",
+      "condition": "During a data read phase (SDI is low)."
+    },
+    {
+      "trigger": "A rising edge on SDI",
+      "effect": "The SDO line returns to a high-impedance state after a delay of tDIS.",
+      "condition": "This terminates the current data read phase. It can happen at any time, but typically after the 16th bit is read."
+    },
+    {
+      "trigger": "After the 16th SCK falling edge",
+      "effect": "SDO returns to high impedance.",
+      "condition": "If SDI does not go high first."
+    }
+  ],
+  "constraints": {
+    "tCYC": "Minimum Cycle Time. The total time for one full acquisition-conversion-readout cycle.",
+    "tCONV": "Conversion Time. The duration of the analog-to-digital conversion process.",
+    "tACQ": "Acquisition Time. The time required for the internal sample-and-hold capacitor to acquire the analog input voltage.",
+    "tSSDICNV": "SDI setup time before CNV rising edge. SDI must be stable high for at least this duration before CNV goes high.",
+    "tHSDICNV": "SDI hold time after CNV rising edge. SDI must remain stable high for at least this duration after CNV goes high.",
+    "tEN": "SDO Enable Time. The delay from SDI falling edge to SDO driving the first bit (MSB). This is a causal delay/propagation time.",
+    "tDIS": "SDO Disable Time. The delay from SDI rising edge to SDO entering a high-impedance state. This is a causal delay/propagation time.",
+    "tHSDO": "SDO Hold Time. The minimum time the SDO data remains valid after the SCK falling edge.",
+    "tDSDO": "SDO Data Delay Time. The maximum time it takes for SDO data to become valid after the SCK falling edge. This is a causal delay/propagation time.",
+    "tSCK": "SCK Period. The duration of one clock cycle.",
+    "tSCKL": "SCK Low Time. The minimum duration the SCK signal must be low.",
+    "tSCKH": "SCK High Time. The minimum duration the SCK signal must be high."
+  },
+  "states": [
+    {
+      "state": "Acquisition",
+      "description": "The device's internal sample-and-hold circuit is tracking the analog input. This occurs before the CNV pulse and after the conversion is complete."
+    },
+    {
+      "state": "Conversion",
+      "description": "The device is actively converting the acquired analog voltage into a digital value. This state is initiated by the rising edge of CNV and lasts for tCONV."
+    },
+    {
+      "state": "Data Readout",
+      "description": "The digital host is actively clocking out the conversion result. This state is initiated by bringing SDI low and clocking SCK. The SDO pin is actively driving data."
+    },
+    {
+      "state": "High-Z (SDO)",
+      "description": "The SDO output pin is in a high-impedance state, allowing other devices to drive the shared data bus. This is the default state when the device is not selected (SDI is high)."
+    }
+  ]
+}

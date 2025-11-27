@@ -1,0 +1,55 @@
+{
+  "operating_mode": "3-Wire CS Mode Without Busy Indicator (SDI High)",
+  "clock_domains": [
+    {
+      "signal": "SCK",
+      "edge": "Falling"
+    }
+  ],
+  "causality": [
+    {
+      "trigger": "Rising edge of CNV",
+      "effect": "Conversion phase is initiated.",
+      "condition": "SDI is high"
+    },
+    {
+      "trigger": "Completion of Conversion phase",
+      "effect": "Device enters Acquisition phase.",
+      "condition": "None"
+    },
+    {
+      "trigger": "Falling edge of CNV",
+      "effect": "SDO exits high-impedance state and outputs the Most Significant Bit (MSB, D15).",
+      "condition": "None"
+    },
+    {
+      "trigger": "Each subsequent falling edge of SCK (from 1st to 15th)",
+      "effect": "The next sequential data bit is output on SDO.",
+      "condition": "CNV is low"
+    },
+    {
+      "trigger": "16th falling edge of SCK or a rising edge on CNV, whichever is earlier",
+      "effect": "SDO returns to a high-impedance state.",
+      "condition": "None"
+    }
+  ],
+  "constraints": {
+    "t_CYC": "Minimum Cycle Time",
+    "t_CNVH": "CNV High Time",
+    "t_CONV": "Conversion Time",
+    "t_ACQ": "Acquisition Time",
+    "t_EN": "SDO Enable Time (from CNV falling edge to SDO valid)",
+    "t_HSDO": "SDO Hold Time (from SCK falling edge)",
+    "t_DSDO": "SDO Data Valid Time (from SCK falling edge)",
+    "t_SCK": "SCK Period",
+    "t_SCKL": "SCK Low Time",
+    "t_SCKH": "SCK High Time",
+    "t_DIS": "SDO Disable Time (from 16th SCK falling edge or CNV rising edge)"
+  },
+  "states": [
+    "Acquisition Phase",
+    "Conversion Phase",
+    "Data Transfer Phase",
+    "High-Impedance (SDO is tri-stated)"
+  ]
+}

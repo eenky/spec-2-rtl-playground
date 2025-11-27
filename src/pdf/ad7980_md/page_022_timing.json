@@ -1,0 +1,63 @@
+{
+  "operating_mode": "4-Wire CS Mode with Busy Indicator",
+  "clock_domains": [
+    {
+      "signal": "SCK",
+      "edge": "Falling"
+    }
+  ],
+  "causality": [
+    {
+      "trigger": "Rising edge of CNV",
+      "effect": "Initiates analog-to-digital conversion and forces SDO to a high-impedance state.",
+      "condition": "SDI must be held high."
+    },
+    {
+      "trigger": "Completion of conversion",
+      "effect": "SDO transitions from high-impedance to a low state, signaling that conversion data is ready to be read.",
+      "condition": "None"
+    },
+    {
+      "trigger": "Falling edge of SCK",
+      "effect": "The next data bit (MSB first, from D15 to D0) is clocked out on the SDO line.",
+      "condition": "During the data readback phase (Clocks 1 through 16)."
+    },
+    {
+      "trigger": "17th falling edge of SCK",
+      "effect": "SDO returns to a high-impedance state.",
+      "condition": "This is an optional clock pulse to disable the SDO driver."
+    }
+  ],
+  "constraints": {
+    "tCYC": "Cycle Time: Minimum time between consecutive rising edges of CNV.",
+    "tCONV": "Conversion Time: The duration from the rising edge of CNV until the conversion is complete.",
+    "tACQ": "Acquisition Time: The period after a conversion and readback during which the device acquires the next analog signal before a new conversion can start.",
+    "tSSDICNV": "SDI Setup Time: The minimum time SDI must be stable high before the rising edge of CNV.",
+    "tHSDICNV": "SDI Hold Time: The minimum time SDI must remain stable high after the rising edge of CNV.",
+    "tEN": "SDO Enable Time: The time from SDO going low (end of conversion) to the first valid data bit (D15) being available. This defines the minimum wait time before starting SCK.",
+    "tSCK": "SCK Period: The duration of one SCK clock cycle.",
+    "tSCKL": "SCK Low Time: The minimum duration the SCK signal must be low.",
+    "tSCKH": "SCK High Time: The minimum duration the SCK signal must be high.",
+    "tHSDO": "SDO Hold Time: The duration for which the SDO data remains valid after the falling edge of SCK.",
+    "tDSDO": "SDO Data Delay: The propagation delay from the falling edge of SCK until the next data bit is valid on SDO.",
+    "tDIS": "SDO Disable Time: The time it takes for the SDO line to enter a high-impedance state after the 17th falling edge of SCK."
+  },
+  "states": [
+    {
+      "name": "Acquisition",
+      "description": "The device is ready to sample the analog input. This state precedes the conversion and follows the completion of the previous data readback."
+    },
+    {
+      "name": "Conversion",
+      "description": "Initiated by a rising edge on CNV. The ADC is busy performing the conversion. During this state, the SDO output is in a high-impedance state."
+    },
+    {
+      "name": "Data Readback",
+      "description": "This state begins after the conversion is complete, indicated by SDO going low. The digital host provides 16 SCK pulses to read the conversion result from the SDO pin."
+    },
+    {
+      "name": "High-Z (SDO)",
+      "description": "The SDO output driver is tri-stated (high-impedance). This occurs during the 'Conversion' state and after the full data word has been clocked out."
+    }
+  ]
+}

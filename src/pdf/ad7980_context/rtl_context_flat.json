@@ -1,0 +1,161 @@
+[
+  {
+    "page_id": "page_005",
+    "page_type": "timing_spec",
+    "relevance_score": 6,
+    "summary": "Contains timing parameters (aperture delay, pipeline delay), digital input/output specifications, and power supply details. Includes 16-bit serial data format and sampling dynamics.",
+    "key_signals": [
+      "Digital Inputs (VIL, VIH)",
+      "Digital Outputs (VOL, VOH)",
+      "Pipeline Delay",
+      "16-bit Serial Data Format",
+      "Aperture Delay"
+    ]
+  },
+  {
+    "page_id": "page_006",
+    "page_type": "timing_spec",
+    "relevance_score": 10,
+    "summary": "Timing specifications for AD7980 ADC including conversion time, acquisition time, SCK periods, setup/hold times for SDI/SDO, and CNV pulse width under varying VIO and temperature conditions.",
+    "key_signals": [
+      "CNV",
+      "SCK",
+      "SDI",
+      "SDO",
+      "CS",
+      "Busy Indicator"
+    ]
+  },
+  {
+    "page_id": "page_007",
+    "page_type": "timing_spec",
+    "relevance_score": 10,
+    "summary": "Timing specifications for AD7980 in CS Mode and Chain Mode, including conversion times, SCK periods, setup/hold times, and throughput parameters. Contains a timing diagram.",
+    "key_signals": [
+      "CNV",
+      "SCK",
+      "SDI",
+      "SDO",
+      "CS"
+    ]
+  },
+  {
+    "page_id": "page_009",
+    "page_type": "pinout",
+    "relevance_score": 6,
+    "summary": "Pin configuration and function descriptions for 10-lead MSOP and LFCSP packages, including signal types (analog/digital/power) and interface control signals (CNV, SDO, SCK, SDI).",
+    "key_signals": [
+      "REF",
+      "VDD",
+      "IN+",
+      "IN-",
+      "GND",
+      "CNV",
+      "SDO",
+      "SCK",
+      "SDI",
+      "VIO",
+      "EPAD"
+    ]
+  },
+  {
+    "page_id": "page_015",
+    "page_type": "protocol",
+    "relevance_score": 8,
+    "summary": "Describes the AD7980 ADC's successive approximation architecture, conversion process (acquisition and conversion phases), and internal charge redistribution DAC operation. Highlights on-chip track-and-hold, power-down mode, and compatibility with 1.8V-5V logic.",
+    "key_signals": [
+      "CNV",
+      "SCK",
+      "IN+",
+      "IN\u2013",
+      "GND",
+      "REF"
+    ]
+  },
+  {
+    "page_id": "page_018",
+    "page_type": "protocol",
+    "relevance_score": 8,
+    "summary": "Describes the AD7980's digital interface protocols, including SPI/QSPI compatibility, 3-wire/4-wire operation, chain mode daisy-chaining, mode selection via SDI level, and busy signal generation via start bits.",
+    "key_signals": [
+      "CNV",
+      "SCK",
+      "SDO",
+      "SDI"
+    ]
+  },
+  {
+    "page_id": "page_019",
+    "page_type": "timing_spec",
+    "relevance_score": 9,
+    "summary": "Describes 3-Wire CS Mode Without Busy Indicator timing, including CNV signal behavior, SCK edge usage, SDO data output sequence, and conversion timing constraints. References Figure 31 timing diagram.",
+    "key_signals": [
+      "CNV",
+      "SCK",
+      "SDO"
+    ]
+  },
+  {
+    "page_id": "page_020",
+    "page_type": "timing_spec",
+    "relevance_score": 9,
+    "summary": "Describes 3-Wire \\overline{CS} mode with busy indicator timing, including CNV, SDO, SCK, and SDI signal interactions. Details conversion initiation, busy signal generation, and data output timing with emphasis on SCK edges and SDO impedance states.",
+    "key_signals": [
+      "CNV",
+      "SDO",
+      "SCK",
+      "SDI"
+    ]
+  },
+  {
+    "page_id": "page_021",
+    "page_type": "protocol",
+    "relevance_score": 9,
+    "summary": "Describes the 4-Wire CS Mode Without Busy Indicator protocol for AD7980 devices, including conversion initiation via CNV, SDI signal usage, data readback timing, and SDO behavior. Details the interaction between SDI, CNV, SCK, and SDO during conversion and data transfer phases.",
+    "key_signals": [
+      "SDI",
+      "CNV",
+      "SCK",
+      "SDO"
+    ]
+  },
+  {
+    "page_id": "page_022",
+    "page_type": "protocol",
+    "relevance_score": 9,
+    "summary": "Describes 4-Wire \\overline{CS} Mode with Busy Indicator for AD7980, detailing signal interactions (CNV, SDI, SDO, SCK), timing requirements, and busy signal generation via SDO transition. Emphasizes protocol-specific constraints for SPI-compatible hosts.",
+    "key_signals": [
+      "CS",
+      "SCK",
+      "SDI",
+      "SDO",
+      "CNV",
+      "Busy (SDO)"
+    ]
+  },
+  {
+    "page_id": "page_023",
+    "page_type": "timing_spec",
+    "relevance_score": 9,
+    "summary": "Describes Chain Mode Without Busy Indicator for daisy-chaining AD7980 devices on a 3-wire interface, including timing diagrams (Figure 39) and signal behavior (SDI, SDO, SCK, CNV). Details conversion initiation, data readback timing, and interface requirements.",
+    "key_signals": [
+      "SDI",
+      "SDO",
+      "SCK",
+      "CNV"
+    ]
+  },
+  {
+    "page_id": "page_024",
+    "page_type": "timing_spec",
+    "relevance_score": 9,
+    "summary": "Describes Chain Mode with Busy Indicator for AD7980, including timing diagrams (Figure 41) and signal behavior (SDI, CNV, SDO, SCK) for daisy-chaining ADCs on a 3-wire interface.",
+    "key_signals": [
+      "SDI",
+      "CNV",
+      "SDO",
+      "SCK",
+      "Busy Indicator"
+    ]
+  }
+]

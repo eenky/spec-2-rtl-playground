@@ -1,0 +1,65 @@
+{
+  "operating_mode": "3-Wire CS Mode with Busy Indicator (SDI High)",
+  "clock_domains": [
+    {
+      "signal": "SCK",
+      "edge": "Both"
+    }
+  ],
+  "causality": [
+    {
+      "trigger": "Rising edge of CNV",
+      "effect": "Device enters CONVERSION state from ACQUISITION state and SDO pin goes to High-Z.",
+      "condition": "SDI must be held high (SDI=1)."
+    },
+    {
+      "trigger": "Completion of the conversion time (tCONV)",
+      "effect": "The SDO pin is driven low to indicate the end of the conversion (end of busy state).",
+      "condition": "None"
+    },
+    {
+      "trigger": "Falling edge of SCK",
+      "effect": "A new data bit (D15 down to D0) is driven onto the SDO pin.",
+      "condition": "After SDO has indicated end-of-conversion by going low."
+    },
+    {
+      "trigger": "The 17th falling edge of SCK or a rising edge on CNV (whichever occurs first)",
+      "effect": "The SDO pin returns to a High-Z state.",
+      "condition": "During the data readout phase."
+    }
+  ],
+  "constraints": {
+    "tCYC": "Minimum Cycle Time",
+    "tCNVH": "CNV High Time",
+    "tCONV": "Conversion Time",
+    "tACQ": "Acquisition Time",
+    "tSCK": "SCK Period",
+    "tSCKL": "SCK Low Time",
+    "tSCKH": "SCK High Time",
+    "tHSDO": "SDO Hold Time after SCK falling edge",
+    "tDSDO": "SDO Data Delay from SCK falling edge",
+    "tDIS": "SDO Disable Time after 17th SCK falling edge"
+  },
+  "states": [
+    {
+      "state": "ACQUISITION",
+      "description": "The device is acquiring the analog input signal. This occurs when CNV is low."
+    },
+    {
+      "state": "CONVERSION",
+      "description": "The device is converting the acquired analog signal to a digital value. This state is initiated by a rising edge on CNV and lasts for tCONV."
+    },
+    {
+      "state": "DATA READOUT",
+      "description": "The digital conversion result is shifted out on the SDO pin, synchronized to the SCK clock."
+    },
+    {
+      "state": "SDO High-Z",
+      "description": "The SDO output driver is disabled (high impedance). This occurs during the CONVERSION phase and after the entire data frame has been read."
+    },
+    {
+      "state": "BUSY INDICATOR",
+      "description": "The SDO pin is driven low to signal that the conversion is complete and the device is ready for data readout. This occurs between the CONVERSION and DATA READOUT phases."
+    }
+  ]
+}

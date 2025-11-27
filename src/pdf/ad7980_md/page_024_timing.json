@@ -1,0 +1,69 @@
+{
+  "operating_mode": "Chain Mode with Busy Indicator",
+  "clock_domains": [
+    {
+      "signal": "SCK",
+      "edge": "Falling"
+    }
+  ],
+  "causality": [
+    {
+      "trigger": "Rising edge of CNV",
+      "effect": "End of Acquisition phase and start of Conversion phase.",
+      "condition": "SDI is held low."
+    },
+    {
+      "trigger": "Completion of the t_CONV period for all devices in the chain.",
+      "effect": "The SDO line of each device is driven high, indicating the bus is ready for data readback.",
+      "condition": "CNV is high."
+    },
+    {
+      "trigger": "Falling edge of SCK",
+      "effect": "A new data bit is shifted out on each SDO pin.",
+      "condition": "During the Data Readback phase."
+    },
+    {
+      "trigger": "Falling edge of SCK",
+      "effect": "The data present on the SDI pin is sampled and shifted into the internal register.",
+      "condition": "During the Data Readback phase."
+    },
+    {
+      "trigger": "Falling edge of CNV",
+      "effect": "End of the Data Readback phase and start of a new Acquisition phase.",
+      "condition": "After all data bits have been clocked out."
+    }
+  ],
+  "constraints": {
+    "t_CYC": "Minimum Cycle Time",
+    "t_CONV": "Conversion Time",
+    "t_ACQ": "Minimum Acquisition Time",
+    "t_HSCKCNV": "SCK Hold Time after CNV Rising Edge",
+    "t_SSCKCNV": "SCK Setup Time before CNV Rising Edge",
+    "t_EN": "SDO Enable Time (from end of conversion to SDO driven high)",
+    "t_SCK": "SCK Clock Period",
+    "t_SCKH": "SCK High Pulse Width",
+    "t_SCKL": "SCK Low Pulse Width",
+    "t_SSDISCK": "SDI Setup Time before SCK Falling Edge",
+    "t_HSDISC": "SDI Hold Time after SCK Falling Edge",
+    "t_HSDO": "SDO Data Hold Time (after SCK falling edge)",
+    "t_DSDOSDI": "SDO to SDO Propagation Delay through a device in the chain"
+  },
+  "states": [
+    {
+      "state": "Acquisition",
+      "description": "Device is acquiring the analog input signal. CNV is low."
+    },
+    {
+      "state": "Conversion",
+      "description": "Device is converting the acquired analog signal to a digital value. This phase is initiated by a rising edge on CNV, and CNV is held high."
+    },
+    {
+      "state": "Data Readback",
+      "description": "After conversion completes, SDO goes high as a busy indicator. Digital data is shifted out on the falling edges of SCK."
+    },
+    {
+      "state": "SDO High-Z",
+      "description": "During the Acquisition and Conversion phases, the SDO pin is in a high-impedance state until time t_EN after the conversion is complete."
+    }
+  ]
+}

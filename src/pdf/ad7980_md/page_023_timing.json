@@ -1,0 +1,65 @@
+{
+  "operating_mode": "Chain Mode Without Busy Indicator",
+  "clock_domains": [
+    {
+      "signal": "SCK",
+      "edge": "Falling"
+    }
+  ],
+  "causality": [
+    {
+      "trigger": "Rising edge of CNV",
+      "effect": "Device enters the Conversion phase",
+      "condition": "SCK and SDI are low"
+    },
+    {
+      "trigger": "Falling edge of CNV",
+      "effect": "Device ends Conversion and enters Acquisition/Data Readback phase",
+      "condition": "The high pulse on CNV has lasted for at least tCONV"
+    },
+    {
+      "trigger": "Falling edge of CNV",
+      "effect": "SDO is enabled and outputs the MSB of the conversion result after a delay of tEN",
+      "condition": "Start of the Data Readback phase"
+    },
+    {
+      "trigger": "Each subsequent falling edge of SCK",
+      "effect": "SDO output is updated with the next bit from the internal shift register after a propagation delay of tDSDO",
+      "condition": "During the Data Readback phase"
+    },
+    {
+      "trigger": "After 16*N SCK cycles, where N is the device's position in the chain",
+      "effect": "The device begins outputting the data shifted in from its SDI pin",
+      "condition": "In a daisy-chain configuration"
+    }
+  ],
+  "constraints": {
+    "tCYC": "Minimum cycle time between conversions.",
+    "tCONV": "Conversion time, the minimum required duration for the CNV high pulse.",
+    "tACQ": "Acquisition time, the minimum time required between the end of a conversion and the start of the next.",
+    "tSSCKCNV": "Setup time requirement for SCK to be stable (low) before the rising edge of CNV.",
+    "tHSCKCNV": "Hold time requirement for SCK to remain low after the rising edge of CNV.",
+    "tEN": "SDO enable time, the maximum delay from the falling edge of CNV until SDO is driven with the MSB.",
+    "tHSDO": "SDO hold time, the minimum time the previous data bit is held valid on SDO after the SCK falling edge.",
+    "tDSDO": "SDO propagation delay, the maximum time it takes for the new data bit to be valid on SDO after the SCK falling edge.",
+    "tSCK": "SCK clock period.",
+    "tSCKH": "SCK clock high time.",
+    "tSCKL": "SCK clock low time.",
+    "tSSDISCK": "SDI setup time, the minimum time SDI data must be stable before the falling edge of SCK.",
+    "tHSDISC": "SDI hold time, the minimum time SDI data must remain stable after the falling edge of SCK."
+  },
+  "states": [
+    {
+      "state": "Acquisition/Idle",
+      "description": "CNV is low. The device is in a low-power state, acquiring the analog signal. The text specifies that when both CNV and SDI are low, SDO is driven low."
+    },
+    {
+      "state": "Conversion",
+      "description": "CNV is high. The device is actively performing the analog-to-digital conversion. This phase must last for the duration of tCONV."
+    },
+    {
+      "state": "Data Readback",
+      "description": "After CNV goes low, the conversion result is ready. The SCK clock is used to shift the 16-bit result out via the SDO pin, MSB first. This state overlaps with the next Acquisition phase."
+    }
+  ]
+}

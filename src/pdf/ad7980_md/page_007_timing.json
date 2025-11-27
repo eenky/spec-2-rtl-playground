@@ -1,0 +1,125 @@
+{
+  "operating_mode": "AD7980 CS Mode and Chain Mode",
+  "clock_domains": [
+    {
+      "signal": "SCK",
+      "edge": "Falling"
+    }
+  ],
+  "causality": [
+    {
+      "trigger": "Rising edge of CNV",
+      "effect": "Conversion data becomes available on SDO",
+      "condition": "Within t_CONV time. The first bit is driven on SDO upon CNV or SDI falling edge (t_EN)."
+    },
+    {
+      "trigger": "Falling edge of SCK",
+      "effect": "Next bit of SDO data becomes valid",
+      "condition": "This is a clock-to-out delay (t_DSDO)."
+    },
+    {
+      "trigger": "Falling edge of SCK",
+      "effect": "SDO data remains valid",
+      "condition": "Data is guaranteed to be stable for a minimum duration of t_HSDO."
+    },
+    {
+      "trigger": "CNV or SDI goes Low",
+      "effect": "SDO drives the D15 MSB bit",
+      "condition": "Occurs after t_EN delay in CS Mode."
+    },
+    {
+      "trigger": "CNV or SDI goes High, or the last SCK falling edge occurs",
+      "effect": "SDO output enters a High-Impedance state",
+      "condition": "Occurs after t_DIS delay in CS Mode."
+    },
+    {
+      "trigger": "SDI goes High",
+      "effect": "SDO goes High",
+      "condition": "Propagation delay of t_DSDOSDI, applies in Chain Mode with Busy Indicator."
+    }
+  ],
+  "constraints": {
+    "Throughput_Rate": {
+      "max": "833 kSPS"
+    },
+    "t_CONV": {
+      "description": "Conversion Time: CNV Rising Edge to Data Available",
+      "min": "500 ns",
+      "max": "800 ns"
+    },
+    "t_ACQ": {
+      "description": "Acquisition Time",
+      "min": "290 ns"
+    },
+    "t_CYC": {
+      "description": "Time Between Conversions",
+      "min": "1.2 us"
+    },
+    "t_CNVH": {
+      "description": "CNV Pulse Width (CS Mode)",
+      "min": "10 ns"
+    },
+    "t_SCK_CS_Mode": {
+      "description": "SCK Period (CS Mode)",
+      "min": "22 ns"
+    },
+    "t_SCK_Chain_Mode": {
+      "description": "SCK Period (Chain Mode)",
+      "min": "23 ns"
+    },
+    "t_SCKL": {
+      "description": "SCK Low Time",
+      "min": "6 ns"
+    },
+    "t_SCKH": {
+      "description": "SCK High Time",
+      "min": "6 ns"
+    },
+    "t_SSDICNV_CS_Mode": {
+      "description": "SDI Valid Setup Time from CNV Rising Edge (CS Mode)",
+      "min": "5 ns"
+    },
+    "t_HSDICNV_CS_Mode": {
+      "description": "SDI Valid Hold Time from CNV Rising Edge (CS Mode)",
+      "min": "10 ns"
+    },
+    "t_HSDICNV_Chain_Mode": {
+      "description": "SDI Valid Hold Time from CNV Rising Edge (Chain Mode)",
+      "min": "0 ns"
+    },
+    "t_SSCKCNV_Chain_Mode": {
+      "description": "SCK Valid Setup Time from CNV Rising Edge (Chain Mode)",
+      "min": "5 ns"
+    },
+    "t_HSCKCNV_Chain_Mode": {
+      "description": "SCK Valid Hold Time from CNV Rising Edge (Chain Mode)",
+      "min": "5 ns"
+    },
+    "t_SSDISCK_Chain_Mode": {
+      "description": "SDI Valid Setup Time from SCK Falling Edge (Chain Mode)",
+      "min": "2 ns"
+    },
+    "t_HSDISCK_Chain_Mode": {
+      "description": "SDI Valid Hold Time from SCK Falling Edge (Chain Mode)",
+      "min": "3 ns"
+    }
+  },
+  "states": [
+    {
+      "state_name": "High-Impedance",
+      "description": "The SDO output pin is tri-stated. This occurs after a read operation is complete in CS Mode, triggered by CNV high, SDI high, or the last SCK falling edge."
+    },
+    {
+      "state_name": "CS Mode",
+      "description": "Chip Select mode where the CNV signal frames the conversion and data transfer."
+    },
+    {
+      "state_name": "Chain Mode",
+      "description": "A mode that allows multiple devices to be daisy-chained together. Data from one device's SDO is passed to the next device's SDI."
+    },
+    {
+      "state_name": "Busy Indicator",
+      "description": "A feature within Chain Mode where the SDO pin is used to indicate the converter's busy status."
+    }
+  ]
+}

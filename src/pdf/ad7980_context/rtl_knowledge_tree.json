@@ -1,0 +1,182 @@
+{
+  "id": "AD7980_ROOT",
+  "type": "device_root",
+  "title": "AD7980 Analog-to-Digital Converter",
+  "description": "Comprehensive documentation for the AD7980, a 16-bit, 1 MSPS PulSAR ADC.",
+  "apply_condition": "TRUE",
+  "content_refs": [],
+  "children": [
+    {
+      "id": "AD7980_GENERAL_CHARACTERISTICS",
+      "type": "mode_group",
+      "title": "General Device Characteristics",
+      "description": "Fundamental specifications and architecture details applicable across all operating modes.",
+      "apply_condition": "TRUE",
+      "content_refs": [],
+      "children": [
+        {
+          "id": "AD7980_DEVICE_ARCHITECTURE",
+          "type": "leaf_fact",
+          "title": "Device Architecture and Conversion Process",
+          "description": "Describes the successive approximation architecture, conversion phases, and internal DAC operation.",
+          "apply_condition": "TRUE",
+          "content_refs": [
+            "page_015"
+          ],
+          "children": []
+        },
+        {
+          "id": "AD7980_PINOUT",
+          "type": "leaf_fact",
+          "title": "Pin Configuration and Functions",
+          "description": "Details on pin assignments, package types, and signal descriptions for various packages.",
+          "apply_condition": "TRUE",
+          "content_refs": [
+            "page_009"
+          ],
+          "children": []
+        },
+        {
+          "id": "AD7980_DIGITAL_INTERFACE_OVERVIEW",
+          "type": "leaf_fact",
+          "title": "Digital Interface Overview",
+          "description": "General description of SPI/QSPI compatibility, 3-wire/4-wire operation, chain mode, and mode selection.",
+          "apply_condition": "TRUE",
+          "content_refs": [
+            "page_018"
+          ],
+          "children": []
+        },
+        {
+          "id": "AD7980_GENERAL_TIMING_PARAMETERS",
+          "type": "leaf_fact",
+          "title": "General Timing Parameters",
+          "description": "Overall timing parameters, digital I/O specifications, power supply details, and serial data format.",
+          "apply_condition": "TRUE",
+          "content_refs": [
+            "page_005",
+            "page_006"
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "AD7980_OPERATING_MODES",
+      "type": "mode_group",
+      "title": "Operating Modes",
+      "description": "Detailed specifications for various digital interface operating modes.",
+      "apply_condition": "TRUE",
+      "content_refs": [],
+      "children": [
+        {
+          "id": "AD7980_3WIRE_CS_MODE",
+          "type": "mode_group",
+          "title": "3-Wire CS Mode",
+          "description": "Protocols and timing for 3-wire chip select operation.",
+          "apply_condition": "IF interface_mode == '3-Wire CS'",
+          "content_refs": [],
+          "children": [
+            {
+              "id": "AD7980_3WIRE_CS_NO_BUSY",
+              "type": "sub_mode",
+              "title": "3-Wire CS Mode Without Busy Indicator",
+              "description": "Timing and protocol details when the busy indicator is not used in 3-Wire CS mode.",
+              "apply_condition": "IF interface_mode == '3-Wire CS' AND busy_indicator == FALSE",
+              "content_refs": [
+                "page_019"
+              ],
+              "children": []
+            },
+            {
+              "id": "AD7980_3WIRE_CS_WITH_BUSY",
+              "type": "sub_mode",
+              "title": "3-Wire CS Mode With Busy Indicator",
+              "description": "Timing and protocol details when the busy indicator is enabled in 3-Wire CS mode.",
+              "apply_condition": "IF interface_mode == '3-Wire CS' AND busy_indicator == TRUE",
+              "content_refs": [
+                "page_020"
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "AD7980_4WIRE_CS_MODE",
+          "type": "mode_group",
+          "title": "4-Wire CS Mode",
+          "description": "Protocols and timing for 4-wire chip select operation.",
+          "apply_condition": "IF interface_mode == '4-Wire CS'",
+          "content_refs": [],
+          "children": [
+            {
+              "id": "AD7980_4WIRE_CS_NO_BUSY",
+              "type": "sub_mode",
+              "title": "4-Wire CS Mode Without Busy Indicator",
+              "description": "Protocol and timing for 4-wire CS mode without busy indicator.",
+              "apply_condition": "IF interface_mode == '4-Wire CS' AND busy_indicator == FALSE",
+              "content_refs": [
+                "page_021"
+              ],
+              "children": []
+            },
+            {
+              "id": "AD7980_4WIRE_CS_WITH_BUSY",
+              "type": "sub_mode",
+              "title": "4-Wire CS Mode With Busy Indicator",
+              "description": "Protocol and timing for 4-wire CS mode with busy indicator.",
+              "apply_condition": "IF interface_mode == '4-Wire CS' AND busy_indicator == TRUE",
+              "content_refs": [
+                "page_022"
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "AD7980_CHAIN_MODE",
+          "type": "mode_group",
+          "title": "Chain Mode (Daisy-Chaining)",
+          "description": "Protocols and timing for daisy-chaining multiple AD7980 devices.",
+          "apply_condition": "IF interface_mode == 'Chain'",
+          "content_refs": [],
+          "children": [
+            {
+              "id": "AD7980_CHAIN_NO_BUSY",
+              "type": "sub_mode",
+              "title": "Chain Mode Without Busy Indicator",
+              "description": "Timing and protocol for chain mode without busy indicator.",
+              "apply_condition": "IF interface_mode == 'Chain' AND busy_indicator == FALSE",
+              "content_refs": [
+                "page_023"
+              ],
+              "children": []
+            },
+            {
+              "id": "AD7980_CHAIN_WITH_BUSY",
+              "type": "sub_mode",
+              "title": "Chain Mode With Busy Indicator",
+              "description": "Timing and protocol for chain mode with busy indicator.",
+              "apply_condition": "IF interface_mode == 'Chain' AND busy_indicator == TRUE",
+              "content_refs": [
+                "page_024"
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AD7980_COMMON_MODE_TIMING",
+      "type": "leaf_fact",
+      "title": "Common CS/Chain Mode Timing Diagrams",
+      "description": "General timing specifications and diagrams applicable to both CS and Chain modes, including conversion times and throughput.",
+      "apply_condition": "IF interface_mode == '3-Wire CS' OR interface_mode == '4-Wire CS' OR interface_mode == 'Chain'",
+      "content_refs": [
+        "page_007"
+      ],
+      "children": []
+    }
+  ]
+} 
